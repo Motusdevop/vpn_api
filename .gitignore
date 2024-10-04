@@ -1,0 +1,7 @@
+.idea/
+
+__pychache__/
+src/__pycache__/
+src/vpn/__pycache__/
+
+.env
