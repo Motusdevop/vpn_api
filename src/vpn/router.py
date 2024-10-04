@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from subprocess import run, check_output
 
-from schemas import NewVPNConfig, VPNConfig, Clients
+from vpn.schemas import NewVPNConfig, VPNConfig, Clients
 
 from fastapi.responses import FileResponse
 
