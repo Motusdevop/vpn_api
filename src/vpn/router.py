@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from subprocess import run, check_output
 
-router = APIRouter(prefix='api/vpn')
+router = APIRouter(prefix='/api/vpn')
 
 @router.post("/add")
 async def add():
