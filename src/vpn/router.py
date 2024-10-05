@@ -1,42 +1,55 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
 
 from subprocess import run, check_output
 
-from vpn.schemas import NewVPNConfig, VPNConfig, Clients
+from authentication.tools import authenticate_user
 
-from fastapi.responses import FileResponse
+from vpn.schemas import NewVPNConfig, VPNConfig, Clients
 
 router = APIRouter(prefix='/api/vpn')
 
+
 @router.post("/add")
-async def add(new_config: NewVPNConfig):
-    config_name = new_config.config_name
-    res = run(['pivpn', 'add', '-n', config_name], encoding='utf-8')
+async def add(new_config: NewVPNConfig, authorized: bool = Depends(authenticate_user)):
+    if authorized:
+        config_name = new_config.config_name
 
+        config = 'config'
+        res = run(['pivpn', 'add', '-n', config_name], encoding='utf-8')
 
-    return {'file': FileResponse(f'/home/pivpn/configs/{config_name}.conf')}
+        with open(f'/home/pivpn/configs/{config_name}.conf') as f:
+            config = f.read()
+
+        return VPNConfig(name=config_name, config=config)
+    else:
+        raise HTTPException(status_code=401)
+
 
 @router.get("/clients")
-async def clients():
+async def clients(authorized: bool = Depends(authenticate_user)):
     res = check_output(['pivpn', 'clients'], encoding='utf-8')
     return res
 
+
 @router.get("/clients_all")
-async def clients_all():
+async def clients_all(authorized: bool = Depends(authenticate_user)):
     res = check_output(['pivpn', 'list'], encoding='utf-8')
     return res
 
+
 @router.post("/on/{config_name}")
-async def on(config_name: str):
+async def on(config_name: str, authorized: bool = Depends(authenticate_user)):
     res = run(['pivpn', 'on', config_name, '-y'], encoding='utf-8')
     return res.stdout
 
+
 @router.post("/off/{config_name}")
-async def off(config_name: str):
+async def off(config_name: str, authorized: bool = Depends(authenticate_user)):
     res = run(['pivpn', 'off', config_name, '-y'], encoding='utf-8')
     return res.stdout
 
+
 @router.delete("/delete/{config_name}")
-async def delete(config_name: str):
+async def delete(config_name: str, authorized: bool = Depends(authenticate_user)):
     res = run(['pivpn', 'remove', config_name, '-y'], encoding='utf-8')
     return res.stdout
