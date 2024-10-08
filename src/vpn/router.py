@@ -5,6 +5,7 @@ from subprocess import run, check_output
 from authentication.tools import authenticate_user
 
 from vpn.schemas import NewVPNConfig, VPNConfig, Clients
+from vpn.tools import parse_clients
 
 router = APIRouter(prefix='/api/vpn')
 
@@ -20,36 +21,48 @@ async def add(new_config: NewVPNConfig, authorized: bool = Depends(authenticate_
         with open(f'/home/pivpn/configs/{config_name}.conf') as f:
             config = f.read()
 
-        return VPNConfig(name=config_name, config=config)
+        return {config_name: config}
     else:
         raise HTTPException(status_code=401)
 
 
+# @router.get("/clients")
+# async def clients(authorized: bool = Depends(authenticate_user)):
+#     res = check_output(['pivpn', 'clients'], encoding='utf-8')
+#     return res
+
 @router.get("/clients")
-async def clients(authorized: bool = Depends(authenticate_user)):
-    res = check_output(['pivpn', 'clients'], encoding='utf-8')
-    return res
+async def clients(authorized: bool = Depends(authenticate_user)) -> Clients:
+    if authorized:
+        res = check_output(['pivpn', 'list'], encoding='utf-8')
 
-
-@router.get("/clients_all")
-async def clients_all(authorized: bool = Depends(authenticate_user)):
-    res = check_output(['pivpn', 'list'], encoding='utf-8')
-    return res
-
+        return Clients(**parse_clients(res))
+    else:
+        raise HTTPException(status_code=401)
 
 @router.post("/on/{config_name}")
 async def on(config_name: str, authorized: bool = Depends(authenticate_user)):
-    res = run(['pivpn', 'on', config_name, '-y'], encoding='utf-8')
-    return res.stdout
+    if authorized:
+        res = run(['pivpn', 'on', config_name, '-y'], encoding='utf-8')
+        return res.stdout
+    else:
+        raise HTTPException(status_code=401)
 
 
 @router.post("/off/{config_name}")
 async def off(config_name: str, authorized: bool = Depends(authenticate_user)):
-    res = run(['pivpn', 'off', config_name, '-y'], encoding='utf-8')
-    return res.stdout
+    if authorized:
+        res = run(['pivpn', 'off', config_name, '-y'], encoding='utf-8')
+        return res.stdout
+    else:
+        raise HTTPException(status_code=401)
 
 
 @router.delete("/delete/{config_name}")
 async def delete(config_name: str, authorized: bool = Depends(authenticate_user)):
-    res = run(['pivpn', 'remove', config_name, '-y'], encoding='utf-8')
-    return res.stdout
+    if authorized:
+        res = run(['pivpn', 'remove', config_name, '-y'], encoding='utf-8')
+        return res.stdout
+    else:
+        raise HTTPException(status_code=401)
+
